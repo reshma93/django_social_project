@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html >
+  <head>
+    <meta charset="UTF-8">
+    <title>Personalized Search Engine</title>
+
+    {% load static%}
+    <link rel="stylesheet" href="{% static "css/results.css" %}" type="text/css" charset="utf-8">
+
+     </head>
+
+<body>
+<div>
+  <h1>Results </h1>
+  </br>
+  	{% for p in together %}
+		<div>
+		  <ol>
+		    <li><span>{{ forloop.counter }}.</span>
+		    <p>	<a href= {{ p.0.0 }} > <b>{{ p.0.1 }}</b> </a> </br>{{ p.0.2 }}  </p></li>
+		    
+		    
+		    <li><span> {{ forloop.counter }}.</span>
+		    <p> <a href= {{ p.1.0 }} ><b> {{ p.1.1 }} </b></a> </br>{{ p.1.1 }}  </p></li>
+		    
+		    
+
+		    <li><span>{{ forloop.counter }}.</span>
+		    <p><a href= {{ p.2.0 }} ><b> {{ p.2.1 }} </b> </a></br> {{ p.2.1 }} </p></li>
+
+		    
+		  </ol> 
+		</div>  
+	{% endfor %}
+	
+</div>
+
+</body>
+</html>

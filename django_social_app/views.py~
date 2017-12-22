@@ -1,0 +1,81 @@
+from django.shortcuts import render_to_response, redirect, render
+from django.contrib.auth import logout as auth_logout
+from django.contrib.auth.decorators import login_required
+from django.template.context import RequestContext
+import requests
+from django.http import HttpResponse
+import tweepy
+from tweepy import OAuthHandler
+import json
+from google import search
+import textrazor
+import re
+
+
+def login(request):
+    # context = RequestContext(request, {
+    #     'request': request, 'user': request.user})
+    # return render_to_response('login.html', context_instance=context)
+    return render(request, 'login.html')
+
+
+@login_required(login_url='/')
+def home(request):
+     
+
+    consumer_key = 'RmYhC39yrTsRahPrxpbTNIk9m'
+    consumer_secret = 'SEjo3pHKsuK6jnXuLoOfX7cZMbRMAzRlfiiRs4anWirhYbnGbU'
+
+    social = request.user.social_auth.get(provider='twitter')
+    access_token = social.extra_data['access_token'].get('oauth_token')
+    access_secret = social.extra_data['access_token'].get('oauth_token_secret')
+    
+    auth = OAuthHandler(consumer_key, consumer_secret)
+    auth.set_access_token(access_token, access_secret)
+ 
+    api = tweepy.API(auth)
+    alltweets = ""
+    for tweet in tweepy.Cursor(api.user_timeline).items():
+        alltweets+=json.dumps(tweet._json["text"])+"\n"
+    
+    for status in tweepy.Cursor(api.home_timeline).items(50):
+        alltweets+=status.text +"\n"
+    #print alltweets    
+    process_or_store(alltweets)
+    return render(request,'home.html')
+
+
+def logout(request):
+    auth_logout(request)
+    return redirect('/')
+
+def process_or_store(alltweets):
+    textrazor.api_key = "813c3fc408c749a28006cca97f5865dca86c569f77ed08728b151bc0"
+    client = textrazor.TextRazor(extractors=["entities", "topics","words","phrases"])
+    #client.set_cleanup_mode("stripTags")
+    alltweets = re.sub(r"(?:\@|https?\://)\S+", "", alltweets)
+    client.set_classifiers(["textrazor_iab"])
+    response = client.analyze(alltweets)
+    print "##############################################################################################"
+    for np in response.noun_phrases():
+        print alltweets[np.words[0].input_start_offset: np.words[-1].input_end_offset]
+    
+    print "\n\n\nEntities"
+    for entity in response.entities():    
+        print entity.id, entity.relevance_score, entity.confidence_score, entity.dbpedia_types
+    
+    print "\n\n\nTopics"
+    for topic in response.topics():
+        print topic.label, topic.score
+
+    print "\n\n\nCategories"
+    for category in response.categories():
+        print category.category_id, category.label, category.score
+
+
+def results(request):
+    if 'search_string' in request.GET:
+        search_string = request.GET['search_string']
+    for url in search(search_string, stop=50):
+            print(url)
+    return render(request,'results.html')
